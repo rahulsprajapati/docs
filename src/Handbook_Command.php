@@ -33,9 +33,9 @@ class Handbook_Command extends EE_Command {
 			$this->output_dir = $args[0];
 		}
 
-		self::gen_commands();
-		self::gen_commands_manifest();
-		self::gen_hb_manifest();
+		self::gen_commands( array() );
+		self::gen_commands_manifest( array() );
+		self::gen_hb_manifest( array() );
 		EE::success( 'Generated all doc pages.' );
 	}
 
