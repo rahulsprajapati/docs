@@ -33,9 +33,9 @@ class Handbook_Command extends EE_Command {
 			$this->output_dir = $args[0];
 		}
 
-		self::gen_commands();
-		self::gen_commands_manifest();
-		self::gen_hb_manifest();
+		self::gen_commands( array() );
+		self::gen_commands_manifest( array() );
+		self::gen_hb_manifest( array() );
 		EE::success( 'Generated all doc pages.' );
 	}
 
@@ -68,20 +68,25 @@ class Handbook_Command extends EE_Command {
 		}
 		$ee['subcommands'] = array_values( $ee['subcommands'] );
 		foreach ( $ee['subcommands'] as $cmd ) {
-			$this->gen_cmd_pages( $cmd );
-		}
-		$package_dir      = dirname( __DIR__ ) . '/bin/packages';
-		$ee_with_packages = self::invoke_ee( 'site cmd-dump' );
-		foreach ( $ee_with_packages['subcommands'] as $k => $cmd ) {
-			if ( in_array( $cmd['name'], array( 'website', 'api-dump' ) )
-			     || in_array( $cmd['name'], $bundled_cmds ) ) {
-				unset( $ee_with_packages['subcommands'][ $k ] );
+
+			if ( 'handbook' === $cmd['name'] ) {
+				continue;
 			}
-		}
-		$ee_with_packages['subcommands'] = array_values( $ee_with_packages['subcommands'] );
-		foreach ( $ee_with_packages['subcommands'] as $cmd ) {
+
 			$this->gen_cmd_pages( $cmd );
 		}
+//		$package_dir      = dirname( __DIR__ ) . '/bin/packages';
+//		$ee_with_packages = self::invoke_ee( 'site cmd-dump' );
+//		foreach ( $ee_with_packages['subcommands'] as $k => $cmd ) {
+//			if ( in_array( $cmd['name'], array( 'website', 'api-dump' ) )
+//			     || in_array( $cmd['name'], $bundled_cmds ) ) {
+//				unset( $ee_with_packages['subcommands'][ $k ] );
+//			}
+//		}
+//		$ee_with_packages['subcommands'] = array_values( $ee_with_packages['subcommands'] );
+//		foreach ( $ee_with_packages['subcommands'] as $cmd ) {
+//			$this->gen_cmd_pages( $cmd );
+//		}
 		EE::success( 'Generated all command pages.' );
 	}
 
@@ -151,7 +156,12 @@ class Handbook_Command extends EE_Command {
 			$this->output_dir . '/commands/*/*/*.md',
 		);
 		$commands_data = array();
-		foreach ( EE::get_root_command()->get_subcommands() as $command ) {
+		foreach ( EE::get_root_command()->get_subcommands() as $name => $command ) {
+
+			if ( 'handbook' === $name ) {
+				continue;
+			}
+
 			self::update_commands_data( $command, $commands_data, '' );
 		}
 		foreach ( $paths as $path ) {
@@ -174,7 +184,7 @@ class Handbook_Command extends EE_Command {
 					'slug'            => $slug,
 					'cmd_path'        => $cmd_path,
 					'parent'          => $parent,
-					'markdown_source' => sprintf( 'https://github.com/EasyEngine/handbook/blob/master/commands/%s.md', $cmd_path ),
+					'markdown_source' => sprintf( '%s/commands/%s.md', $this->output_dir, $cmd_path ),
 				);
 				if ( ! empty( $commands_data[ $title ] ) ) {
 					$manifest[ $cmd_path ] = array_merge( $manifest[ $cmd_path ], $commands_data[ $title ] );
@@ -342,8 +352,9 @@ EOT;
 			$binding['docs'] = $docs;
 		}
 		$path = $this->output_dir . "/commands/" . $binding['path'];
-		if ( ! is_dir( dirname( $path ) ) ) {
-			mkdir( dirname( $path ) );
+		
+		if ( ! is_dir( ( $path ) ) ) {
+			mkdir( $path, 0777, true );
 		}
 		$markdown_doc = self::render( 'subcmd-list.mustache', $binding );
 		if ( $return_str ) {
